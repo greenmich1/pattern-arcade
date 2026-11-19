@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Abstract Reasoning Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* Retro-arcade shell (single dark theme by choice) around monochrome test canvases. Layout: one column, max 760px. */
+:root {
+  --bg: #0A0D1F; --bg2: #141A3D; --bg3: #1E2654; --ink: #F3F5FF; --muted: #9BA3D6; --line: #2C356E;
+  --I: #00D1FF; --O: #FFC400; --T: #B44CFF; --S: #22D36B; --Z: #FF3D6E; --L: #FF8A00; --J: #3D7BFF;
+  --display: 'Silkscreen', 'Courier New', monospace; --body: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5; }
+body { background-image: linear-gradient(var(--bg2) 1px, transparent 1px), linear-gradient(90deg, var(--bg2) 1px, transparent 1px); background-size: 28px 28px; background-attachment: fixed; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid var(--O); outline-offset: 2px; }
+a { color: var(--I); }
+.wrap { max-width: 760px; margin: 0 auto; padding: 0 16px 64px; }
+
+/* header */
+header.top { position: relative; overflow: hidden; border-bottom: 3px solid #000; background: #070915; }
+#rain { position: absolute; inset: 0; width: 100%; height: 100%; opacity: .55; }
+.brand { position: relative; max-width: 760px; margin: 0 auto; padding: 18px 16px 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.logo { font-family: var(--display); font-size: clamp(20px, 5vw, 30px); line-height: 1; letter-spacing: 1px; text-shadow: 3px 3px 0 #000; }
+.logo span:nth-child(1) { color: var(--I); } .logo span:nth-child(2) { color: var(--O); } .logo span:nth-child(3) { color: var(--Z); }
+.logo small { display: block; font-family: var(--body); font-size: 13px; color: var(--muted); text-shadow: none; letter-spacing: 0; margin-top: 6px; }
+nav.tabs { display: flex; gap: 6px; }
+nav.tabs a { font-family: var(--display); font-size: 13px; text-decoration: none; color: var(--ink); padding: 8px 12px; background: var(--bg3); border: 2px solid #000; box-shadow: inset 0 -3px 0 rgba(0,0,0,.4); }
+nav.tabs a[aria-current="page"] { background: var(--O); color: #000; }
+
+/* blocks / buttons */
+.blk { border: 2px solid #000; box-shadow: inset 0 -4px 0 rgba(0,0,0,.35), inset 0 3px 0 rgba(255,255,255,.25); border-radius: 3px; }
+.btn { font-family: var(--display); font-size: 14px; padding: 10px 16px; background: var(--J); color: #fff; border: 2px solid #000; border-radius: 3px; box-shadow: inset 0 -4px 0 rgba(0,0,0,.35), inset 0 3px 0 rgba(255,255,255,.25), 0 3px 0 #000; transition: transform .08s; }
+.btn:active { transform: translateY(2px); box-shadow: inset 0 -2px 0 rgba(0,0,0,.35), 0 1px 0 #000; }
+.btn.go { background: var(--S); color: #000; } .btn.warn { background: var(--O); color: #000; } .btn.ghost { background: var(--bg3); color: var(--ink); }
+.btn[disabled] { opacity: .45; cursor: default; }
+
+/* control deck */
+.deck { margin-top: 16px; background: var(--bg2); border: 3px solid #000; padding: 14px; display: grid; gap: 14px; }
+.deck h2 { font-family: var(--display); font-size: 12px; color: var(--muted); margin: 0 0 6px; letter-spacing: 1px; font-weight: 400; }
+.types { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 7px; padding: 7px 11px; background: var(--bg3); border: 2px solid #000; border-radius: 3px; font-size: 14px; font-weight: 700; box-shadow: inset 0 -3px 0 rgba(0,0,0,.35); }
+.chip i { width: 12px; height: 12px; display: inline-block; border: 2px solid #000; }
+.chip[aria-pressed="true"] { background: var(--ink); color: #000; }
+.row2 { display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: end; }
+@media (max-width: 520px) { .row2 { grid-template-columns: 1fr; } }
+.lvl { display: flex; align-items: center; gap: 10px; }
+.lvlnum { font-family: var(--display); font-size: 22px; min-width: 2ch; text-align: right; }
+.meter { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; flex: 1; position: relative; }
+.meter b { height: 22px; border: 2px solid #000; background: var(--bg); }
+.meter b.on { box-shadow: inset 0 -3px 0 rgba(0,0,0,.35), inset 0 2px 0 rgba(255,255,255,.3); }
+.meter input { position: absolute; inset: -6px 0; width: 100%; opacity: 0; cursor: pointer; margin: 0; }
+.lvlhint { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.learn { display: flex; align-items: center; gap: 10px; background: none; border: 0; padding: 0; text-align: left; }
+.switch { width: 58px; height: 30px; border: 3px solid #000; background: var(--bg); position: relative; flex: none; }
+.switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: var(--muted); transition: left .15s; box-shadow: inset 0 -3px 0 rgba(0,0,0,.35); }
+.learn[aria-pressed="true"] .switch { background: linear-gradient(90deg, var(--I), var(--S), var(--O), var(--Z), var(--T)); }
+.learn[aria-pressed="true"] .switch::after { left: 30px; background: #fff; }
+.learn .lbl { font-family: var(--display); font-size: 13px; line-height: 1.2; }
+.learn .lbl small { display: block; font-family: var(--body); font-size: 12px; color: var(--muted); }
+
+/* HUD */
+.hud { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 12px; }
+.hud div { background: #000; border: 2px solid var(--line); padding: 6px 8px; }
+.hud small { display: block; font-family: var(--display); font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+.hud strong { font-family: var(--display); font-size: 16px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.hud .x strong { color: var(--O); } .hud .s strong { color: var(--Z); } .hud .r strong { color: var(--I); }
+
+/* puzzle stage */
+.stage { margin-top: 16px; background: var(--bg2); border: 3px solid #000; }
+.stagebar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 3px solid #000; background: var(--bg3); flex-wrap: wrap; }
+.badge { font-family: var(--display); font-size: 12px; padding: 4px 8px; border: 2px solid #000; color: #000; }
+.meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.prompt { font-size: 18px; font-weight: 700; margin: 0; padding: 14px 14px 0; text-wrap: balance; }
+.canvas { background: #fff; color: #000; margin: 12px; padding: 14px; border: 3px solid #000; }
+.canvas .cap { font-size: 13px; font-weight: 700; margin: 0 0 6px; letter-spacing: .3px; }
+svg.pv { display: block; width: 100%; height: auto; aspect-ratio: 1; }
+
+.mgrid { display: grid; grid-template-columns: repeat(3, 1fr); border: 3px solid #000; max-width: 380px; margin: 0 auto; }
+.mgrid .cell { border-right: 2px solid #000; border-bottom: 2px solid #000; position: relative; }
+.mgrid .cell:nth-child(3n) { border-right: 0; } .mgrid .cell:nth-child(n+7) { border-bottom: 0; }
+.qmark { aspect-ratio: 1; display: grid; place-items: center; font-family: var(--display); font-size: 40px; background: repeating-linear-gradient(45deg, #fff 0 8px, #f0f0f0 8px 16px); }
+.srow { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.srow .cell { border: 2px solid #000; }
+@media (max-width: 560px) { .srow { grid-template-columns: repeat(3, 1fr); } }
+.tags { display: flex; flex-wrap: wrap; gap: 3px; padding: 3px; justify-content: center; min-height: 0; }
+.tag { font: 700 11px/1.2 var(--body); color: #000; padding: 1px 5px; border: 1.5px solid #000; border-radius: 2px; white-space: nowrap; }
+
+.opts { display: grid; grid-template-columns: repeat(var(--oc), 1fr); gap: 10px; padding: 0 12px 4px; }
+@media (max-width: 560px) { .opts { grid-template-columns: repeat(var(--ocm), 1fr); } }
+.opt { background: #fff; color: #000; border: 3px solid #000; padding: 0; display: flex; flex-direction: column; border-radius: 2px; box-shadow: 0 4px 0 #000; transition: transform .08s; text-align: left; }
+.opt:hover:not([disabled]) { transform: translateY(-2px); }
+.opt .ol { font-family: var(--display); font-size: 13px; padding: 3px 6px; background: #000; color: #fff; display: flex; justify-content: space-between; }
+.opt .pv, .opt .seqwrap { padding: 4px; }
+.opt.right { outline: 4px solid var(--S); outline-offset: 2px; }
+.opt.right .ol { background: var(--S); color: #000; }
+.opt.wrong { outline: 4px solid var(--Z); outline-offset: 2px; }
+.opt.wrong .ol { background: var(--Z); color: #000; }
+.opt[disabled] { cursor: default; }
+.notes { list-style: none; margin: 10px 12px 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; }
+.notes li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.35; background: var(--bg); border: 2px solid #000; padding: 6px 8px; }
+.notes li.ok { border-color: var(--S); } .notes li.bad .nl { background: var(--Z); } .notes li.ok .nl { background: var(--S); }
+.notes .nl { font-family: var(--display); font-size: 12px; color: #000; padding: 0 5px; border: 2px solid #000; flex: none; }
+.note { font-size: 12px; line-height: 1.3; padding: 4px 6px 6px; border-top: 2px solid #000; }
+.note.ok { background: #DFFBEA; } .note.bad { background: #FFE4EA; }
+.ppanel .tagline { font-size: 12px; }
+
+.oddgrid { display: grid; grid-template-columns: repeat(var(--oc), 1fr); gap: 8px; }
+@media (max-width: 560px) { .oddgrid { grid-template-columns: repeat(3, 1fr); } }
+
+.setsbox { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.set { border: 3px solid #000; padding: 8px; }
+.set h4 { margin: 0 0 6px; font-family: var(--display); font-size: 13px; font-weight: 400; }
+.set .g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.set .g .cell { border: 2px solid #000; }
+.testfig { max-width: 150px; margin: 14px auto 0; text-align: center; }
+.testfig .cell { border: 3px solid #000; }
+@media (max-width: 520px) { .setsbox { grid-template-columns: 1fr; } }
+.abn { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 12px 4px; }
+.abn .opt { align-items: center; justify-content: center; font-family: var(--display); font-size: 16px; padding: 14px 6px; text-align: center; }
+
+.flows { display: grid; gap: 10px; }
+.flow { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; border-bottom: 1px dashed #999; padding-bottom: 10px; }
+.flow:last-child { border-bottom: 0; }
+.flow .exn { font-size: 12px; font-weight: 700; width: 100%; }
+.flow .arr { font-weight: 700; font-size: 18px; }
+.flow svg.seq { height: 40px; width: auto; }
+.qbox { border: 3px dashed #000; padding: 6px 12px; font-family: var(--display); font-size: 20px; }
+.opsrow { display: inline-flex; gap: 4px; }
+.opsrow svg { width: 34px; height: 34px; }
+.seqwrap svg { width: 100%; height: auto; max-height: 52px; }
+.trace { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; background: #fff; padding: 8px; border: 2px solid #000; margin-top: 8px; }
+.trace svg.seq { height: 34px; width: auto; }
+.trace svg.op { width: 28px; height: 28px; }
+
+/* feedback + explainer */
+.feedback { margin: 12px; padding: 12px; border: 3px solid #000; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.feedback.good { background: var(--S); color: #000; } .feedback.bad { background: var(--Z); color: #000; }
+.feedback strong { font-family: var(--display); font-size: 18px; font-weight: 400; display: block; }
+.feedback .fx { display: flex; gap: 8px; flex-wrap: wrap; }
+.explain { margin: 12px; background: #0D1230; border: 3px solid #000; padding: 12px; }
+.explain h3 { font-family: var(--display); font-size: 14px; font-weight: 400; margin: 0 0 10px; color: var(--O); }
+.explain ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.explain li { background: var(--bg2); border-left: 8px solid var(--muted); padding: 8px 10px; animation: drop .25s ease-out; }
+.explain li b { display: block; }
+.explain li .k { display: block; font-family: var(--display); font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+.excontrols { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.locked { color: var(--muted); font-size: 14px; }
+
+@keyframes drop { from { transform: translateY(-6px); opacity: .2; } to { transform: none; opacity: 1; } }
+@keyframes shake { 0%,100% { transform: none; } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+@keyframes pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+.shake { animation: shake .3s 2; } .pop { animation: pop .35s ease-out; }
+.burst { position: fixed; pointer-events: none; z-index: 50; width: 14px; height: 14px; border: 2px solid #000; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* lessons + about */
+.page { margin-top: 16px; display: grid; gap: 14px; }
+.page h2 { font-family: var(--display); font-size: 20px; font-weight: 400; margin: 6px 0 0; }
+.page p.lead { color: var(--muted); margin: 0; max-width: 65ch; }
+.lessons { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.lcard { text-align: left; background: var(--bg2); border: 3px solid #000; padding: 12px; display: grid; gap: 6px; box-shadow: 0 4px 0 #000; }
+.lcard .n { font-family: var(--display); font-size: 12px; color: #000; padding: 2px 6px; justify-self: start; border: 2px solid #000; }
+.lcard b { font-size: 17px; } .lcard span { font-size: 14px; color: var(--muted); }
+.card { background: var(--bg2); border: 3px solid #000; padding: 14px; }
+.card h3 { margin: 0 0 8px; font-size: 18px; }
+.card ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 65ch; }
+table.pace { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+table.pace th, table.pace td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+table.pace th { font-family: var(--display); font-size: 11px; font-weight: 400; color: var(--muted); }
+.tblwrap { overflow-x: auto; }
+.foot { margin-top: 24px; font-size: 13px; color: var(--muted); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="#fff"/><line x1="1" y1="0" x2="1" y2="5" stroke="#000" stroke-width="2"/></pattern>
+</defs></svg>
+<header class="top">
+  <canvas id="rain" aria-hidden="true"></canvas>
+  <div class="brand">
+    <div class="logo"><span>PATTERN</span> <span>ARCADE</span> <span>//</span><small>Abstract reasoning trainer: SHL, Korn Ferry, Saville, Aon and Criteria formats</small></div>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#play" data-v="play">Play</a><a href="#lessons" data-v="lessons">Lessons</a><a href="#about" data-v="about">About</a>
+    </nav>
+  </div>
+</header>
+<main class="wrap" id="app"></main>
+<script>
+/*ENGINE*/
+</script>
+<script>
+(function () {
+'use strict';
+const E = window.ARC;
+const app = document.getElementById('app');
+const TYPES = [
+  { id: 'matrix', name: 'Matrix', c: 'var(--I)', prompt: 'Which option completes the grid?' },
+  { id: 'series', name: 'Series', c: 'var(--O)', prompt: 'Which figure comes next in the sequence?' },
+  { id: 'odd', name: 'Odd one out', c: 'var(--Z)', prompt: 'Which figure is the odd one out?' },
+  { id: 'sets', name: 'Set A / B', c: 'var(--T)', prompt: 'Does the test figure belong to Set A, Set B, or neither?' },
+  { id: 'diagram', name: 'Diagram', c: 'var(--S)', prompt: 'Each symbol changes the row of figures in one fixed way. Which row comes out at the end?' },
+  { id: 'mix', name: 'Mix', c: 'var(--L)', prompt: '' }
+];
+const LVL_HINT = ['One rule, clear wrong options', 'One rule', 'Two rules', 'Two rules, more rule types', 'Two to three rules', 'Three rules, extra elements', 'Three rules, line logic', 'Three rules, near-miss options', 'Four rules', 'Four rules, everything mixed'];
+const RANKS = [[0, 'Rookie'], [150, 'Trainee'], [400, 'Analyst'], [800, 'Strategist'], [1500, 'Architect'], [2500, 'Grandmaster']];
+const st = { type: 'matrix', level: 3, learn: true, focus: null, item: null, curType: 'matrix', picked: null, shown: 1, explainOpen: false, xp: 0, streak: 0, best: 0, solved: 0, right: 0, t0: Date.now(), tEnd: null };
+try { const s = JSON.parse(localStorage.getItem('pa-prefs') || '{}'); if (s.type) st.type = s.type; if (s.level) st.level = s.level; if (typeof s.learn === 'boolean') st.learn = s.learn; } catch (e) {}
+const savePrefs = () => { try { localStorage.setItem('pa-prefs', JSON.stringify({ type: st.type, level: st.level, learn: st.learn })); } catch (e) {} };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const L8 = i => String.fromCharCode(65 + i);
+
+/* ---------- drawing ---------- */
+function polyPts(n, r, cx, cy, a0) { const p = []; for (let i = 0; i < n; i++) { const a = a0 + i * 2 * Math.PI / n; p.push((cx + r * Math.sin(a)).toFixed(2) + ',' + (cy - r * Math.cos(a)).toFixed(2)); } return p.join(' '); }
+function shapeSVG(shape, cx, cy, r, fill, rotDeg, stroke, sw) {
+  const f = fill === 2 ? '#000' : fill === 1 ? 'url(#hatch)' : '#fff';
+  const a = `fill="${f}" stroke="${stroke}" stroke-width="${sw}" stroke-linejoin="round"`;
+  const T = rotDeg ? ` transform="rotate(${rotDeg} ${cx} ${cy})"` : '';
+  const P = arr => `<polygon points="${arr.map(([x, y]) => (cx + x * r).toFixed(2) + ',' + (cy + y * r).toFixed(2)).join(' ')}" ${a}${T}/>`;
+  switch (shape) {
+    case 'circle': return `<circle cx="${cx}" cy="${cy}" r="${(r * .9).toFixed(2)}" ${a}/>`;
+    case 'square': return `<rect x="${(cx - r * .78).toFixed(2)}" y="${(cy - r * .78).toFixed(2)}" width="${(r * 1.56).toFixed(2)}" height="${(r * 1.56).toFixed(2)}" ${a}/>`;
+    case 'triangle': return `<polygon points="${polyPts(3, r * 1.05, cx, cy + r * .14, 0)}" ${a}/>`;
+    case 'diamond': return `<polygon points="${polyPts(4, r, cx, cy, 0)}" ${a}/>`;
+    case 'pentagon': return `<polygon points="${polyPts(5, r * .98, cx, cy + r * .05, 0)}" ${a}/>`;
+    case 'hexagon': return `<polygon points="${polyPts(6, r * .95, cx, cy, Math.PI / 6)}" ${a}/>`;
+    case 'star': { const p = []; for (let i = 0; i < 10; i++) { const rr = i % 2 ? r * .45 : r; const an = i * Math.PI / 5; p.push([Math.sin(an) * rr / r, -Math.cos(an) * rr / r + .06]); } return P(p); }
+    case 'cross': { const t = .32; return P([[-t, -.9], [t, -.9], [t, -t], [.9, -t], [.9, t], [t, t], [t, .9], [-t, .9], [-t, t], [-.9, t], [-.9, -t], [-t, -t]]); }
+    case 'arrow': return P([[0, -1], [.72, -.18], [.28, -.18], [.28, .95], [-.28, .95], [-.28, -.18], [-.72, -.18]]);
+    case 'half': return `<path d="M ${(cx - r).toFixed(2)} ${(cy + r * .38).toFixed(2)} A ${r} ${r} 0 0 1 ${(cx + r).toFixed(2)} ${(cy + r * .38).toFixed(2)} Z" ${a}${T}/>`;
+    case 'tee': return P([[-.95, -.9], [.95, -.9], [.95, -.4], [.28, -.4], [.28, .95], [-.28, .95], [-.28, -.4], [-.95, -.4]]);
+  }
+  return '';
+}
+const LAYOUT = { 1: [[0, 0]], 2: [[-.5, 0], [.5, 0]], 3: [[-.5, .45], [.5, .45], [0, -.45]], 4: [[-.5, -.5], [.5, -.5], [-.5, .5], [.5, .5]], 5: [[-.55, -.55], [.55, -.55], [0, 0], [-.55, .55], [.55, .55]], 6: [[-.62, -.45], [0, -.45], [.62, -.45], [-.62, .45], [0, .45], [.62, .45]] };
+const RAD = { 1: 23, 2: 11.5, 3: 11, 4: 10.5, 5: 8.6, 6: 8.2 };
+const SIZEF = [.58, .8, 1];
+const SEG = [[30, 5, 70, 5], [95, 5, 85, 15], [95, 30, 95, 70], [95, 95, 85, 85], [30, 95, 70, 95], [5, 95, 15, 85], [5, 30, 5, 70], [5, 5, 15, 15]];
+const MPOS = [[50, 14.5], [79, 21], [85.5, 50], [79, 79], [50, 85.5], [21, 79], [14.5, 50], [21, 21]];
+const SHAPE_ATTRS = ['shape', 'count', 'size', 'fill', 'rot'];
+
+function gPanel(p, ov) {
+  let s = `<svg viewBox="0 0 100 100" class="pv" aria-hidden="true">`;
+  const lineOn = ov && ov.on.has('lines');
+  for (let i = 0; i < 8; i++) if (p.lines >> i & 1) { const g = SEG[i]; s += `<line x1="${g[0]}" y1="${g[1]}" x2="${g[2]}" y2="${g[3]}" stroke="${lineOn ? ov.colors.lines : '#000'}" stroke-width="${lineOn ? 5 : 3.4}" stroke-linecap="round"/>`; }
+  const lay = LAYOUT[p.count] || LAYOUT[1]; const r = RAD[p.count] * SIZEF[p.size];
+  const sa = ov && SHAPE_ATTRS.find(a => ov.on.has(a));
+  const rotd = E.SHAPES_ROT.includes(p.shape) ? p.rot * 45 : 0;
+  lay.forEach(([x, y]) => {
+    const cx = 50 + x * 24, cy = 50 + y * 24;
+    if (sa) s += shapeSVG(p.shape, cx, cy, r, 0, rotd, ov.colors[sa], 7).replace(/fill="[^"]*"/, 'fill="none" opacity=".45"');
+    s += shapeSVG(p.shape, cx, cy, r, p.fill, rotd, sa ? '#000' : '#000', Math.min(2.6, r / 3.2));
+  });
+  if (p.pos >= 0) { const [x, y] = MPOS[p.pos]; if (ov && ov.on.has('pos')) s += `<circle cx="${x}" cy="${y}" r="8.5" fill="none" stroke="${ov.colors.pos}" stroke-width="3.5"/>`; s += `<circle cx="${x}" cy="${y}" r="4.6" fill="#000"/>`; }
+  return s + '</svg>';
+}
+function gTags(p, ov, hidden) {
+  if (!ov || !ov.on.size) return '';
+  return '<div class="tags">' + ov.order.filter(a => ov.on.has(a)).map(a => `<span class="tag" style="background:${ov.colors[a]}">${hidden ? '?' : esc(E.tagName(a, p[a]))}</span>`).join('') + '</div>';
+}
+const CC = [20, 50, 80];
+function sPanel(p, hl, color) {
+  let s = `<svg viewBox="0 0 100 100" class="pv" aria-hidden="true">`;
+  p.items.forEach((it, i) => {
+    const cx = CC[it.cell % 3], cy = CC[Math.floor(it.cell / 3)], r = it.big ? 14 : 9.5;
+    if (hl && hl.includes(i)) s += `<circle cx="${cx}" cy="${cy}" r="${r + 4.5}" fill="${color}" opacity=".55" stroke="${color}" stroke-width="2"/>`;
+    s += shapeSVG(it.shape, cx, cy, r, it.fill, 0, '#000', 2.3);
+  });
+  return s + '</svg>';
+}
+function seqSVG(seq) {
+  const w = seq.length * 28 + 6;
+  let s = `<svg class="seq" viewBox="0 0 ${w} 34" aria-hidden="true"><rect x="1" y="1" width="${w - 2}" height="32" fill="#fff" stroke="#000" stroke-width="2"/>`;
+  seq.forEach((t, i) => s += shapeSVG(t.shape, 3 + i * 28 + 14, 17, 10, t.fill, 0, '#000', 2));
+  return s + '</svg>';
+}
+function opSVG(sym, color) {
+  const bg = color || '#000', fg = color ? '#000' : '#fff';
+  let g = '';
+  switch (sym) {
+    case 'star': { const p = []; for (let i = 0; i < 10; i++) { const rr = i % 2 ? 4.5 : 10; const an = i * Math.PI / 5; p.push((17 + Math.sin(an) * rr).toFixed(1) + ',' + (18 - Math.cos(an) * rr).toFixed(1)); } g = `<polygon points="${p.join(' ')}" fill="${fg}"/>`; break; }
+    case 'ring': g = `<circle cx="17" cy="17" r="8" fill="none" stroke="${fg}" stroke-width="3.5"/>`; break;
+    case 'tri': g = `<polygon points="17,7 27,25 7,25" fill="${fg}"/>`; break;
+    case 'sq': g = `<rect x="9" y="9" width="16" height="16" fill="none" stroke="${fg}" stroke-width="3.5"/>`; break;
+    case 'hex': g = `<polygon points="${polyPts(6, 10, 17, 17, Math.PI / 6)}" fill="${fg}"/>`; break;
+    case 'plus': g = `<path d="M17 7v20M7 17h20" stroke="${fg}" stroke-width="5"/>`; break;
+  }
+  return `<svg class="op" viewBox="0 0 34 34" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="4" fill="${bg}" stroke="#000" stroke-width="2"/>${g}</svg>`;
+}
+
+/* ---------- overlay state ---------- */
+function overlayFor(item, shownSteps, all) {
+  const ex = item.explain; const colors = {}; const order = [];
+  ex.rules.forEach(r => { colors[r.attr] = r.color; order.push(r.attr); });
+  const on = new Set();
+  ex.steps.forEach((s, i) => { if ((all || i < shownSteps) && s.kind === 'rule') on.add(s.attr); });
+  const trace = all || ex.steps.findIndex(s => s.kind === 'build') < shownSteps;
+  return { colors, order, on, trace };
+}
+
+/* ---------- puzzle rendering ---------- */
+function puzzleHTML(item, ctx) {
+  const ov = ctx.ov; const done = ctx.done;
+  const T = item.type;
+  let h = '';
+  if (T === 'matrix') {
+    h += '<div class="canvas"><div class="mgrid">';
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
+      const p = item.grid[r][c]; const hidden = r === 2 && c === 2;
+      h += '<div class="cell">' + (hidden && !done ? '<div class="qmark">?</div>' + gTags(p, ov, true) : gPanel(p, ov) + gTags(p, ov, false)) + '</div>';
+    }
+    h += '</div></div>';
+    h += optionsHTML(item, ctx, item.options.length <= 4 ? 4 : item.options.length === 6 ? 3 : 4, item.options.length <= 4 ? 2 : item.options.length === 6 ? 3 : 4, o => gPanel(o, ov) + gTags(o, ov, false));
+  } else if (T === 'series') {
+    h += '<div class="canvas"><div class="srow">';
+    item.frames.forEach((p, t) => { if (t < 5) h += '<div class="cell">' + gPanel(p, ov) + gTags(p, ov) + '</div>'; else h += '<div class="cell">' + (done ? gPanel(p, ov) + gTags(p, ov) : '<div class="qmark">?</div>' + gTags(p, ov, true)) + '</div>'; });
+    h += '</div></div>';
+    h += optionsHTML(item, ctx, 5, 3, o => gPanel(o, ov) + gTags(o, ov, false));
+  } else if (T === 'odd') {
+    const pred = E.predById(item.pred); const on = ov.on.has('pred'); const col = ov.colors.pred;
+    h += '<div class="canvas"><div class="cap">Tap the figure that breaks the pattern</div><div class="oddgrid" style="--oc:' + (item.panels.length === 5 ? 5 : 5) + '">';
+    item.panels.forEach((p, i) => {
+      const cls = done ? (i === item.answer ? ' right' : i === ctx.picked ? ' wrong' : '') : '';
+      h += `<button class="opt${cls}" data-pick="${i}" ${done ? 'disabled' : ''} aria-label="Figure ${i + 1}"><span class="ol"><span>${i + 1}</span>${done && i === item.answer ? '<span>ODD</span>' : ''}</span>${sPanel(p, on ? pred.hl(p) : null, col)}${on ? `<div class="tags"><span class="tag" style="background:${col}">${esc(pred.tag(p))}</span></div>` : ''}</button>`;
+    });
+    h += '</div></div>';
+  } else if (T === 'sets') {
+    const pA = E.predById(item.pA), pB = E.predById(item.pB);
+    const onA = ov.on.has('A'), onB = ov.on.has('B');
+    const cell = (p, pr, on, col) => `<div class="cell">${sPanel(p, on ? pr.hl(p) : null, col)}${on ? `<div class="tags"><span class="tag" style="background:${col}">${esc(pr.tag(p))}</span></div>` : ''}</div>`;
+    h += '<div class="canvas"><div class="setsbox">';
+    h += `<div class="set"><h4>SET A</h4><div class="g">${item.A.map(p => cell(p, pA, onA, ov.colors.A)).join('')}</div></div>`;
+    h += `<div class="set"><h4>SET B</h4><div class="g">${item.B.map(p => cell(p, pB, onB, ov.colors.B)).join('')}</div></div>`;
+    h += '</div>';
+    const tt = item.test;
+    let tags = ''; if (onA) tags += `<span class="tag" style="background:${ov.colors.A}">A: ${esc(pA.tag(tt))}</span>`; if (onB) tags += `<span class="tag" style="background:${ov.colors.B}">B: ${esc(pB.tag(tt))}</span>`;
+    h += `<div class="testfig"><div class="cap">TEST FIGURE</div><div class="cell">${sPanel(tt, onA ? pA.hl(tt) : onB ? pB.hl(tt) : null, onA ? ov.colors.A : ov.colors.B)}${tags ? '<div class="tags">' + tags + '</div>' : ''}</div></div></div>`;
+    h += '<div class="abn">' + ['A', 'B', 'N'].map(k => { const cls = done ? (k === item.answer ? ' right' : k === ctx.picked ? ' wrong' : '') : ''; return `<button class="opt${cls}" data-pick="${k}" ${done ? 'disabled' : ''}>${k === 'N' ? 'NEITHER' : 'SET ' + k}</button>`; }).join('') + '</div>';
+  } else if (T === 'diagram') {
+    const colorOf = item.explain.colorOf;
+    const op = s => opSVG(s, ov.on.has(s) ? colorOf[s] : null);
+    h += '<div class="canvas"><div class="cap">EXAMPLES</div><div class="flows">';
+    item.examples.forEach((e, i) => { h += `<div class="flow"><span class="exn">Example ${i + 1}</span>${seqSVG(e.input)}<span class="arr">→</span><span class="opsrow">${e.ops.map(op).join('')}</span><span class="arr">→</span>${seqSVG(e.output)}</div>`; });
+    h += '</div><div class="cap" style="margin-top:12px">QUESTION</div><div class="flow">' + seqSVG(item.question.input) + '<span class="arr">→</span><span class="opsrow">' + item.question.ops.map(op).join('') + '</span><span class="arr">→</span>' + (done ? seqSVG(item.options[item.answer]) : '<span class="qbox">?</span>') + '</div></div>';
+    h += optionsHTML(item, ctx, 3, 2, o => '<div class="seqwrap">' + seqSVG(o) + '</div>');
+  }
+  return h;
+}
+function optionsHTML(item, ctx, oc, ocm, draw) {
+  const done = ctx.done; const notes = ctx.notes && item.explain.notes;
+  let h = `<div class="opts" style="--oc:${oc};--ocm:${ocm}" role="group" aria-label="Answer options">`;
+  item.options.forEach((o, i) => {
+    const cls = done ? (i === item.answer ? ' right' : i === ctx.picked ? ' wrong' : '') : '';
+    const mark = done && notes ? (i === item.answer ? '✓' : '✗') : (done && i === item.answer ? '✓' : '');
+    h += `<button class="opt${cls}" data-pick="${i}" ${done ? 'disabled' : ''} aria-label="Option ${L8(i)}"><span class="ol"><span>${L8(i)}</span><span>${mark}</span></span>${draw(o)}</button>`;
+  });
+  h += '</div>';
+  if (notes && done) h += '<ul class="notes">' + notes.map((n, i) => `<li class="${n.ok ? 'ok' : 'bad'}"><span class="nl">${L8(i)}</span><span>${n.ok ? '✓ ' : '✗ '}${esc(n.text)}</span></li>`).join('') + '</ul>';
+  return h;
+}
+function stepsHTML(item, n) {
+  const steps = item.explain.steps.slice(0, n);
+  return '<ol>' + steps.map((s, i) => {
+    const col = s.color || (s.kind === 'strategy' ? 'var(--I)' : s.kind === 'match' ? 'var(--S)' : s.kind === 'build' ? 'var(--O)' : 'var(--muted)');
+    const label = { strategy: 'STRATEGY', rule: 'FIND THE RULE', const: 'IGNORE', build: 'BUILD THE ANSWER', match: 'CHECK' }[s.kind];
+    let extra = '';
+    if (s.kind === 'build' && s.trace) { extra = '<div class="trace">' + s.trace.map((q, k) => (k ? opSVG(s.ops[k - 1], item.explain.colorOf[s.ops[k - 1]]) + '<span>→</span>' : '') + seqSVG(q)).join('') + '</div>'; }
+    if (s.kind === 'rule' && s.sym) extra = '<div style="margin-top:6px">' + opSVG(s.sym, s.color) + '</div>';
+    return `<li style="border-left-color:${col}"><span class="k">${i + 1} · ${label}</span>${s.title ? '<b>' + esc(s.title) + '</b>' : ''}<span>${esc(s.text)}</span>${extra}</li>`;
+  }).join('') + '</ol>';
+}
+
+/* ---------- play view ---------- */
+function rankOf(xp) { let r = RANKS[0][1]; RANKS.forEach(([t, n]) => { if (xp >= t) r = n; }); return r; }
+function newItem() {
+  const type = st.type === 'mix' ? ['matrix', 'series', 'odd', 'sets', 'diagram'][Math.floor(Math.random() * 5)] : st.type;
+  const seed = (Math.random() * 2 ** 31) >>> 0;
+  st.item = E.generate(type, st.level, seed, st.focus);
+  st.curType = type; st.picked = null; st.shown = 1; st.explainOpen = false; st.t0 = Date.now(); st.tEnd = null;
+}
+function renderPlay() {
+  const it = st.item; const tdef = TYPES.find(t => t.id === st.curType);
+  const done = st.picked !== null;
+  const showEx = st.learn || st.explainOpen;
+  const all = done && showEx;
+  const ov = showEx ? overlayFor(it, st.shown, all) : { colors: {}, order: [], on: new Set() };
+  const ex = it.explain;
+  let h = '';
+  h += `<section class="deck" aria-label="Settings">
+    <div><h2>PUZZLE TYPE</h2><div class="types">${TYPES.map(t => `<button class="chip" data-type="${t.id}" aria-pressed="${st.type === t.id}"><i style="background:${t.c}"></i>${t.name}</button>`).join('')}</div></div>
+    <div class="row2">
+      <div><h2>DIFFICULTY</h2><div class="lvl"><div class="meter">${[...Array(10)].map((_, i) => `<b class="${i < st.level ? 'on' : ''}" style="${i < st.level ? 'background:' + ['var(--S)', 'var(--S)', 'var(--I)', 'var(--I)', 'var(--J)', 'var(--J)', 'var(--O)', 'var(--L)', 'var(--Z)', 'var(--T)'][i] : ''}"></b>`).join('')}<input type="range" id="lvl" min="1" max="10" step="1" value="${st.level}" aria-label="Difficulty level, 1 to 10"></div><span class="lvlnum">${st.level}</span></div><div class="lvlhint">${LVL_HINT[st.level - 1]}${st.focus ? ' · Focus: ' + esc(st.focusName || st.focus) + ' <button class="btn ghost" id="clearFocus" style="font-size:11px;padding:3px 7px">clear</button>' : ''}</div></div>
+      <button class="learn" id="learn" aria-pressed="${st.learn}"><span class="switch"></span><span class="lbl">LEARN MODE<small>${st.learn ? 'Colour overlays + step-by-step hints' : 'Plain test view. Explanation after you answer'}</small></span></button>
+    </div>
+  </section>
+  <div class="hud"><div class="x"><small>XP</small><strong>${st.xp}</strong></div><div class="r"><small>RANK</small><strong>${rankOf(st.xp)}</strong></div><div class="s"><small>STREAK</small><strong>${st.streak}</strong></div><div><small>SOLVED</small><strong>${st.right}/${st.solved}</strong></div></div>`;
+  h += `<section class="stage" aria-live="polite"><div class="stagebar"><span class="badge" style="background:${tdef.c}">${tdef.name.toUpperCase()} · L${st.level}</span><span class="meta"><span id="clock">0s</span> · puzzle #${it.seed.toString(36).toUpperCase()}</span></div>`;
+  h += `<p class="prompt">${esc(tdef.prompt)}</p>`;
+  h += puzzleHTML(it, { ov, done, picked: st.picked, notes: showEx });
+  if (done) {
+    const good = st.lastGood;
+    h += `<div class="feedback ${good ? 'good pop' : 'bad shake'}"><div><strong>${good ? 'CLEAR! +' + st.lastXp + ' XP' : 'MISS'}</strong>${good ? (st.streak > 1 ? 'Streak ' + st.streak + '. ' : '') + 'Solved in ' + Math.round((st.tEnd - st.t0) / 1000) + 's.' : 'The correct answer is highlighted in green.'}</div><div class="fx">${!st.learn && !st.explainOpen ? '<button class="btn warn" id="explainBtn">EXPLAIN</button>' : ''}<button class="btn go" id="nextBtn">NEXT ▶</button></div></div>`;
+  }
+  if (showEx) {
+    const total = ex.steps.length; const n = all ? total : st.shown;
+    h += `<section class="explain"><h3>STEP-BY-STEP</h3>${stepsHTML(it, n)}`;
+    if (!all) h += `<div class="excontrols"><button class="btn warn" id="stepBtn">${n === 1 ? 'GIVE ME A HINT' : 'NEXT STEP'} ▶</button><span class="locked">${total - n} step${total - n === 1 ? '' : 's'} left. Hints halve the XP for this puzzle.</span></div>`;
+    h += '</section>';
+  } else if (!done) {
+    h += `<div class="explain"><span class="locked">Learn mode is off: answer first, then press Explain to see the colour overlays and reasoning.</span></div>`;
+  }
+  h += '</section>';
+  app.innerHTML = h;
+  bindPlay();
+}
+function bindPlay() {
+  app.querySelectorAll('[data-type]').forEach(b => b.onclick = () => { st.type = b.dataset.type; st.focus = null; savePrefs(); newItem(); renderPlay(); });
+  const lv = document.getElementById('lvl'); lv.oninput = () => { st.level = +lv.value; savePrefs(); newItem(); renderPlay(); document.getElementById('lvl').focus(); };
+  document.getElementById('learn').onclick = () => { st.learn = !st.learn; savePrefs(); renderPlay(); };
+  const cf = document.getElementById('clearFocus'); if (cf) cf.onclick = () => { st.focus = null; newItem(); renderPlay(); };
+  app.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => pick(b.dataset.pick, b));
+  const sb = document.getElementById('stepBtn'); if (sb) sb.onclick = () => { st.shown++; renderPlay(); };
+  const eb = document.getElementById('explainBtn'); if (eb) eb.onclick = () => { st.explainOpen = true; renderPlay(); };
+  const nb = document.getElementById('nextBtn'); if (nb) nb.onclick = () => { newItem(); renderPlay(); window.scrollTo({ top: document.querySelector('.stage').offsetTop - 8, behavior: 'smooth' }); };
+}
+function pick(v, btn) {
+  if (st.picked !== null) return;
+  const it = st.item; const val = it.type === 'sets' ? v : +v;
+  st.picked = val; st.tEnd = Date.now();
+  const good = val === it.answer;
+  st.solved++;
+  const hinted = st.learn && st.shown > 1;
+  if (good) { st.right++; st.streak++; st.best = Math.max(st.best, st.streak); let xp = 10 * st.level + 5 * Math.min(st.streak - 1, 5); if (hinted) xp = Math.round(xp / 2); st.xp += xp; st.lastXp = xp; burst(btn); }
+  else { st.streak = 0; st.lastXp = 0; }
+  st.lastGood = good;
+  renderPlay();
+  const fb = document.querySelector('.feedback'); if (fb) fb.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+}
+function burst(el) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || !el) return;
+  const r = el.getBoundingClientRect(); const cols = ['--I', '--O', '--T', '--S', '--Z', '--L', '--J'];
+  for (let i = 0; i < 16; i++) {
+    const d = document.createElement('div'); d.className = 'burst'; d.style.background = `var(${cols[i % 7]})`;
+    d.style.left = (r.left + r.width / 2) + 'px'; d.style.top = (r.top + r.height / 2) + 'px'; document.body.appendChild(d);
+    const a = Math.random() * Math.PI * 2, dist = 60 + Math.random() * 90;
+    d.animate([{ transform: 'translate(0,0) rotate(0)', opacity: 1 }, { transform: `translate(${Math.cos(a) * dist}px,${Math.sin(a) * dist + 40}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }], { duration: 700 + Math.random() * 300, easing: 'cubic-bezier(.2,.7,.4,1)' }).onfinish = () => d.remove();
+  }
+}
+setInterval(() => { const c = document.getElementById('clock'); if (c && st.item) c.textContent = Math.round(((st.tEnd || Date.now()) - st.t0) / 1000) + 's'; }, 1000);
+
+/* ---------- lessons ---------- */
+const LESSONS = [
+  { id: 'method', c: 'var(--I)', title: 'Predict, then match', sub: 'The strategy top scorers use', type: 'matrix', level: 2, seed: 11, points: ['Work out what the answer must look like before you look at the options. Research on eye movements shows high scorers do this ("constructive matching").', 'Scanning the options first and crossing out misfits ("response elimination") is the fallback people use when overloaded. It is slower and less reliable on hard items.', 'Check one feature at a time, always in the same order: number, shape, size, shading, rotation, position, lines.', 'Put each rule into a few words ("+1 each step", "one of each per row"). Only then look at the options, and confirm your choice breaks no rule.'] },
+  { id: 'progression', c: 'var(--O)', title: 'Progressions', sub: 'Same step, every time', type: 'matrix', level: 3, focus: 'progression', seed: 23, points: ['Something changes by the same amount each step: one more shape, one size bigger, one extra side.', 'Check the step between every pair of neighbours, not just the first two. A rule that only fits the first pair is a trap.', 'In grids, rows often start one step later than the row above, so the columns progress too. Use both directions to double-check.'] },
+  { id: 'dist3', c: 'var(--T)', title: 'Distribution of three', sub: 'One of each per row', type: 'matrix', level: 4, focus: 'dist3', seed: 37, points: ['Three values (for example circle, square, star) each appear once in every row. Only the order changes.', 'Find the row with the gap and ask which value is still missing from it.', 'A close cousin: "same within a row". Each row has its own value, kept across all three cells.'] },
+  { id: 'movement', c: 'var(--S)', title: 'Movement and rotation', sub: 'Positions, turns, directions', type: 'series', level: 4, focus: 'movement', seed: 41, points: ['The dot sits in one of 8 places around the edge: 4 sides and 4 corners. Count the places it moves, clockwise or anticlockwise.', 'Rotation goes in 45° steps. Follow the tip of the arrow, or the flat side of the half-circle.', 'Direction is a favourite trap: options that turn the right amount the wrong way are common.'] },
+  { id: 'logic', c: 'var(--Z)', title: 'Line logic', sub: 'Add, subtract, keep, cancel', type: 'matrix', level: 7, focus: 'logic', seed: 53, points: ['Column 3 is built from columns 1 and 2. There are four common recipes.', 'Add: keep every line. Subtract: remove column 2’s lines from column 1. Common: keep only lines in both. Cancel-out (XOR): lines in both disappear, the rest stay.', 'Test your recipe on rows 1 and 2 before you apply it to row 3. Some rows fit two recipes, and only the other row tells them apart.'] },
+  { id: 'series', c: 'var(--L)', title: 'Multi-rule series', sub: 'Several tracks at once', type: 'series', level: 7, seed: 67, points: ['Hard series run 3–4 rules at once, each on a different feature. Track them separately.', 'Cycles repeat every 2 or 3 frames. Look back 2 or 3 frames, not just one.', 'Growing steps: the dot moves 1, then 2, then 3 places. Lines added one at a time keep the earlier ones.'] },
+  { id: 'odd', c: 'var(--Z)', title: 'Odd one out', sub: 'Aon scales ix, Korn Ferry, Revelian', type: 'odd', level: 5, seed: 79, points: ['Count: shapes, black shapes, straight sides. Odd vs even is a favourite rule.', 'Look for relations, such as "every triangle is black".', 'A valid answer needs a rule that all the others obey. Test it against every figure.', 'Aon’s version shows 9 figures and allows about 15 seconds each, so fast, systematic counting pays.'] },
+  { id: 'sets', c: 'var(--T)', title: 'Set A / Set B', sub: 'Saville and Kenexa style', type: 'sets', level: 5, seed: 83, points: ['Study one set at a time and find what every figure in it shares.', 'The other set usually mirrors it: 2 vs 3, even vs odd, all black vs all white.', 'Answer "Neither" when the test figure fits neither rule.'] },
+  { id: 'diagram', c: 'var(--S)', title: 'Diagrammatic operators', sub: 'Saville and SHL style flowcharts', type: 'diagram', level: 5, seed: 97, points: ['Decode each symbol from its simplest example first: one symbol on its own.', 'Use the symbols you know to peel back the examples that combine two.', 'Apply the question’s symbols strictly left to right, and note each intermediate row.', 'Common traps: wrong order, a skipped step, mixing up "swap the first two" with "reverse".'] }
+];
+function renderLessons() {
+  app.innerHTML = `<div class="page"><h2>LESSONS</h2><p class="lead">Short modules, one rule family each. Every lesson has a worked example with the colour overlays switched on, then a practice run focused on that rule.</p>
+  <div class="lessons">${LESSONS.map((l, i) => `<button class="lcard" data-lesson="${l.id}"><span class="n" style="background:${l.c}">${String(i + 1).padStart(2, '0')}</span><b>${esc(l.title)}</b><span>${esc(l.sub)}</span></button>`).join('')}</div></div>`;
+  app.querySelectorAll('[data-lesson]').forEach(b => b.onclick = () => { location.hash = 'lesson-' + b.dataset.lesson; });
+}
+function renderLesson(id) {
+  const l = LESSONS.find(x => x.id === id); if (!l) return renderLessons();
+  const it = E.generate(l.type, l.level, l.seed * 7919, l.focus);
+  const ov = overlayFor(it, 99, true);
+  const tdef = TYPES.find(t => t.id === l.type);
+  app.innerHTML = `<div class="page"><a href="#lessons">← All lessons</a><h2 style="color:${l.c}">${esc(l.title.toUpperCase())}</h2>
+  <div class="card"><ul>${l.points.map(p => '<li>' + esc(p) + '</li>').join('')}</ul></div>
+  <section class="stage"><div class="stagebar"><span class="badge" style="background:${tdef.c}">WORKED EXAMPLE · L${l.level}</span><span class="meta">answer shown</span></div><p class="prompt">${esc(tdef.prompt)}</p>${puzzleHTML(it, { ov, done: true, picked: it.answer, notes: true })}<section class="explain"><h3>STEP-BY-STEP</h3>${stepsHTML(it, 99)}</section></section>
+  <div><button class="btn go" id="practise">PRACTISE THIS ▶</button></div></div>`;
+  document.getElementById('practise').onclick = () => { st.type = l.type; st.level = l.level; st.focus = l.focus || null; st.focusName = l.title; st.learn = true; newItem(); location.hash = 'play'; };
+}
+
+/* ---------- about ---------- */
+function renderAbout() {
+  app.innerHTML = `<div class="page"><h2>ABOUT</h2><p class="lead">A practice and learning tool, not a test. The puzzle formats follow the abstract reasoning tests used by large employers and recruiters in Australia and New Zealand. It is not affiliated with any test publisher.</p>
+  <div class="card"><h3>Every puzzle has one correct answer</h3><ul>
+   <li>Each puzzle is built from explicit rules. Before you see it, a checker tries every rule in its library against the puzzle. Exactly one option must fit all of them, or the puzzle is thrown away and rebuilt.</li>
+   <li>Every wrong option breaks a rule the explainer can name.</li>
+   <li>Options are balanced so you cannot find the answer by picking the most "typical" one. Tested over 4,000 puzzles, that trick scores no better than random guessing.</li>
+   <li>Odd-one-out and Set A/B puzzles are checked against about 50 rules. Any other simple rule that would point to a different answer gets the puzzle rejected.</li></ul></div>
+  <div class="card"><h3>What practice can and can’t do</h3><ul>
+   <li>Retaking cognitive tests raises scores by about a quarter of a standard deviation on average, and more with coaching (Hausknecht et al., 2007).</li>
+   <li>Gains level off after about three sittings (Scharfen et al., 2018). Learning the rules and a reliable strategy matters more than sheer volume.</li>
+   <li>Much of the improvement is better strategy (Hayes et al., 2015). That is what the lessons and Learn mode teach.</li></ul></div>
+  <div class="card"><h3>Real-test pace</h3><div class="tblwrap"><table class="pace"><thead><tr><th>Test</th><th>Format</th><th>Typical length</th></tr></thead><tbody>
+   <tr><td>SHL Verify Interactive Inductive</td><td>Build the next step of a sequence</td><td>Up to 15 tasks, 18 min</td></tr>
+   <tr><td>Korn Ferry / Talent Q Logical</td><td>Next in sequence, odd one out; adaptive</td><td>About 12 items, timed per item</td></tr>
+   <tr><td>Saville Abstract / Diagrammatic</td><td>Best-fit pattern; operator flowcharts</td><td>Swift Executive: 6 items, 6 min</td></tr>
+   <tr><td>Aon cut-e scales ix</td><td>Odd one out among 9</td><td>20 tasks, 5 min</td></tr>
+   <tr><td>Criteria / Revelian RCAT</td><td>Figures that break the pattern</td><td>51 mixed items, 20 min</td></tr></tbody></table></div>
+   <p class="lead" style="margin-top:8px">Formats change. Your invitation email names the exact test.</p></div>
+  <div class="card"><h3>Research basis</h3><p style="margin:0">Design decisions, sources and the question of whether a puzzle can have two answers: <a href="https://claude.ai/artifact/MQS7iskYwuW7oCy51JsRwB" target="_blank" rel="noopener">Abstract Reasoning Trainer — Research Basis</a>.</p></div>
+  <p class="foot">Pattern Arcade · practice puzzles are generated on your device and nothing is sent anywhere.</p></div>`;
+}
+
+/* ---------- router ---------- */
+function route() {
+  const h = (location.hash || '#play').slice(1);
+  const v = h.startsWith('lesson') ? 'lessons' : (['play', 'lessons', 'about'].includes(h) ? h : 'play');
+  document.querySelectorAll('nav.tabs a').forEach(a => a.setAttribute('aria-current', a.dataset.v === v ? 'page' : 'false'));
+  if (h.startsWith('lesson-')) renderLesson(h.slice(7));
+  else if (v === 'lessons') renderLessons();
+  else if (v === 'about') renderAbout();
+  else { if (!st.item) newItem(); renderPlay(); }
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', route);
+route();
+
+/* ---------- header block rain ---------- */
+(function () {
+  const cv = document.getElementById('rain'); const ctx = cv.getContext('2d');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const cols = ['#00D1FF', '#FFC400', '#B44CFF', '#22D36B', '#FF3D6E', '#FF8A00', '#3D7BFF'];
+  const PIECES = [[[0, 0], [1, 0], [2, 0], [3, 0]], [[0, 0], [1, 0], [0, 1], [1, 1]], [[0, 0], [1, 0], [2, 0], [1, 1]], [[1, 0], [2, 0], [0, 1], [1, 1]], [[0, 0], [1, 0], [1, 1], [2, 1]], [[0, 0], [0, 1], [1, 1], [2, 1]], [[2, 0], [0, 1], [1, 1], [2, 1]]];
+  let W, H, drops = []; const S = 12;
+  function size() { W = cv.width = cv.offsetWidth; H = cv.height = cv.offsetHeight; drops = []; for (let i = 0; i < Math.max(6, W / 60); i++) drops.push(mk(Math.random() * H)); }
+  function mk(y) { const k = Math.floor(Math.random() * 7); return { x: Math.floor(Math.random() * (W / S)) * S, y: y == null ? -40 : y, v: .25 + Math.random() * .5, p: PIECES[k], c: cols[k] }; }
+  function draw() { ctx.clearRect(0, 0, W, H); drops.forEach(d => { d.p.forEach(([a, b]) => { ctx.fillStyle = d.c; ctx.fillRect(d.x + a * S, d.y + b * S, S - 1, S - 1); ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(d.x + a * S, d.y + b * S + S - 4, S - 1, 3); }); if (!reduce) { d.y += d.v; if (d.y > H + 10) Object.assign(d, mk()); } }); if (!reduce) requestAnimationFrame(draw); }
+  size(); addEventListener('resize', size); draw();
+})();
+})();
+</script>
+</body>
+</html>
