@@ -73,7 +73,9 @@ nav.tabs a[aria-current="page"] { background: var(--O); color: #000; }
 .hud .x strong { color: var(--O); } .hud .s strong { color: var(--Z); } .hud .r strong { color: var(--I); }
 
 /* puzzle stage */
-.stage { margin-top: 16px; background: var(--bg2); border: 3px solid #000; }
+/* --cell: one size for a matrix cell and an answer picture, so the grid and every option fit side by side.
+   Row = margins 24 + canvas chrome 32 + gap 14 + option chrome 3×10 + gaps 20 = 120px fixed, plus 6 cells. */
+.stage { margin-top: 16px; background: var(--bg2); border: 3px solid #000; container-type: inline-size; --cell: clamp(72px, (100cqi - 120px) / 6, 112px); }
 .stagebar { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 3px solid #000; background: var(--bg3); flex-wrap: wrap; }
 .badge { font-family: var(--display); font-size: 12px; padding: 4px 8px; border: 2px solid #000; color: #000; }
 .meta { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
@@ -103,6 +105,20 @@ svg.pv { display: block; width: 100%; height: auto; aspect-ratio: 1; }
 .opt.wrong { outline: 4px solid var(--Z); outline-offset: 2px; }
 .opt.wrong .ol { background: var(--Z); color: #000; }
 .opt[disabled] { cursor: default; }
+/* matrix: grid on the left, options on the right, each option picture the size of a grid cell */
+.duo { display: grid; grid-template-columns: auto auto; justify-content: center; align-items: start; gap: 14px; margin: 12px; }
+.duo .canvas { margin: 0; padding: 10px; }
+.duo .mgrid { grid-template-columns: repeat(3, var(--cell)); max-width: none; }
+.duo .opts { grid-template-columns: repeat(var(--oc), calc(var(--cell) + 10px)); padding: 0; align-content: start; }
+.duo .opt .pv { padding: 3px; }
+/* series: answer pictures the size of a frame (6 frames across the canvas) */
+.opts.srs { grid-template-columns: repeat(var(--oc), minmax(0, calc((100cqi - 98px) / 6 + 10px))); justify-content: center; }
+@container (max-width: 600px) {
+  .duo { grid-template-columns: minmax(0, 1fr); }
+  .duo .mgrid { grid-template-columns: repeat(3, 1fr); max-width: 380px; }
+  .duo .opts { grid-template-columns: repeat(var(--ocm), minmax(0, 1fr)); }
+  .opts.srs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 .notes { list-style: none; margin: 10px 12px 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 6px; }
 .notes li { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; line-height: 1.35; background: var(--bg); border: 2px solid #000; padding: 6px 8px; }
 .notes li.ok { border-color: var(--S); } .notes li.bad .nl { background: var(--Z); } .notes li.ok .nl { background: var(--S); }
@@ -310,18 +326,20 @@ function puzzleHTML(item, ctx) {
   const T = item.type;
   let h = '';
   if (T === 'matrix') {
-    h += '<div class="canvas"><div class="mgrid">';
+    h += '<div class="duo"><div class="canvas"><div class="mgrid">';
     for (let r = 0; r < 3; r++) for (let c = 0; c < 3; c++) {
       const p = item.grid[r][c]; const hidden = r === 2 && c === 2;
       h += '<div class="cell">' + (hidden && !done ? '<div class="qmark">?</div>' + gTags(p, ov, true) : gPanel(p, ov) + gTags(p, ov, false)) + '</div>';
     }
     h += '</div></div>';
-    h += optionsHTML(item, ctx, item.options.length <= 4 ? 4 : item.options.length === 6 ? 3 : 4, item.options.length <= 4 ? 2 : item.options.length === 6 ? 3 : 4, o => gPanel(o, ov) + gTags(o, ov, false));
+    // 4 options → 2×2, 6 → 3×2, 8 → 3×3 (the empty ninth slot echoes the grid’s missing cell); phones: under the grid, 3 per row (4 when there are 8, so all fit on screen)
+    h += optsHTML(item, ctx, item.options.length <= 4 ? 2 : 3, item.options.length <= 6 ? 3 : 4, o => gPanel(o, ov) + gTags(o, ov, false)) + '</div>';
+    h += notesHTML(item, ctx);
   } else if (T === 'series') {
     h += '<div class="canvas"><div class="srow">';
     item.frames.forEach((p, t) => { if (t < 5) h += '<div class="cell">' + gPanel(p, ov) + gTags(p, ov) + '</div>'; else h += '<div class="cell">' + (done ? gPanel(p, ov) + gTags(p, ov) : '<div class="qmark">?</div>' + gTags(p, ov, true)) + '</div>'; });
     h += '</div></div>';
-    h += optionsHTML(item, ctx, 5, 3, o => gPanel(o, ov) + gTags(o, ov, false));
+    h += optionsHTML(item, ctx, 5, 3, o => gPanel(o, ov) + gTags(o, ov, false), 'srs');
   } else if (T === 'odd') {
     const pred = E.predById(item.pred); const on = ov.on.has('pred'); const col = ov.colors.pred;
     h += '<div class="canvas"><div class="cap">Tap the figure that breaks the pattern</div><div class="oddgrid" style="--oc:' + (item.panels.length === 5 ? 5 : 5) + '">';
@@ -352,17 +370,23 @@ function puzzleHTML(item, ctx) {
   }
   return h;
 }
-function optionsHTML(item, ctx, oc, ocm, draw) {
+function optionsHTML(item, ctx, oc, ocm, draw, cls) { return optsHTML(item, ctx, oc, ocm, draw, cls) + notesHTML(item, ctx); }
+/** The answer buttons alone (the matrix places them beside its grid). */
+function optsHTML(item, ctx, oc, ocm, draw, cls) {
   const done = ctx.done; const notes = ctx.notes && item.explain.notes;
-  let h = `<div class="opts" style="--oc:${oc};--ocm:${ocm}" role="group" aria-label="Answer options">`;
+  let h = `<div class="opts${cls ? ' ' + cls : ''}" style="--oc:${oc};--ocm:${ocm}" role="group" aria-label="Answer options">`;
   item.options.forEach((o, i) => {
     const cls = done ? (i === item.answer ? ' right' : i === ctx.picked ? ' wrong' : '') : '';
     const mark = done && notes ? (i === item.answer ? '✓' : '✗') : (done && i === item.answer ? '✓' : '');
     h += `<button class="opt${cls}" data-pick="${i}" ${done ? 'disabled' : ''} aria-label="Option ${L8(i)}"><span class="ol"><span>${L8(i)}</span><span>${mark}</span></span>${draw(o)}</button>`;
   });
-  h += '</div>';
-  if (notes && done) h += '<ul class="notes">' + notes.map((n, i) => `<li class="${n.ok ? 'ok' : 'bad'}"><span class="nl">${L8(i)}</span><span>${n.ok ? '✓ ' : '✗ '}${esc(n.text)}</span></li>`).join('') + '</ul>';
-  return h;
+  return h + '</div>';
+}
+/** After answering (Learn mode or Explain): why each option is right or wrong. */
+function notesHTML(item, ctx) {
+  const notes = ctx.notes && item.explain.notes;
+  if (!notes || !ctx.done) return '';
+  return '<ul class="notes">' + notes.map((n, i) => `<li class="${n.ok ? 'ok' : 'bad'}"><span class="nl">${L8(i)}</span><span>${n.ok ? '✓ ' : '✗ '}${esc(n.text)}</span></li>`).join('') + '</ul>';
 }
 function stepsHTML(item, n) {
   const steps = item.explain.steps.slice(0, n);

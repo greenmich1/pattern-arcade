@@ -33,6 +33,7 @@ Set per generator: number of simultaneous rules (`[1,1,2,2,2,3,3,3,4,4]`), the r
 - Shell: retro-arcade, single dark theme on purpose. Tetris colours `--I --O --T --S --Z --L --J`, fonts Silkscreen (display, use sparingly) and Atkinson Hyperlegible (body, chosen for legibility across ages).
 - Puzzle canvas: always black on white, like real tests. Colour appears on the puzzle only through Learn mode overlays or after Explain.
 - Respect `prefers-reduced-motion`. Keep tap targets large; mobile-first, max width 760px.
+- Grid and options are seen together, never a scroll apart. Matrix: grid left, options right (`.duo`), stacked under the grid when the stage is ≤600px wide. Answer pictures are the size of a grid cell or series frame (`--cell` on `.stage`, from a container query). Keep the stage's prompt, grid and options within a 720px-tall screen.
 
 ## Natural next steps
 - Timed simulation mode that mirrors each provider's real format and time limits (table on the About view).
