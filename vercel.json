@@ -1,5 +1,13 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "echo no-deps"
+  "installCommand": "echo no-deps",
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "pattern-arcade-seven.vercel.app" }],
+      "destination": "https://pattern-lab-gold.vercel.app/:path*",
+      "permanent": true
+    }
+  ]
 }

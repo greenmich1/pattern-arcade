@@ -8,7 +8,7 @@ An abstract reasoning trainer for working professionals aged 18–65. It generat
 - `npm run build` — inlines `src/engine.js` into `src/app.html` → `dist/index.html` (one self-contained file, no dependencies).
 - `npm test` — validity suite (node:test). Run after ANY change to `src/engine.js`. `PER_LEVEL=300 npm test` for a deeper run.
 - `npm run dev` — build and serve `dist/` on http://localhost:3000.
-- Deploy: `npx vercel --prod` (vercel.json runs the build and serves `dist/`).
+- Deploy: a push to `main` deploys (Vercel project `pattern-lab`, https://pattern-lab-gold.vercel.app); `npx vercel --prod` also works. vercel.json runs the build, serves `dist/`, and redirects the old address, pattern-arcade-seven.vercel.app, to the new one (owner, 2026-11-26).
 
 ## Layout
 - `src/engine.js` — pure JS, no DOM. Works in Node (`require('./src/engine.js').ARC`) and the browser (`window.ARC`). Holds the generators, the uniqueness validators, the distractor builder and the explanation text.
