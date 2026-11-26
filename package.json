@@ -1,5 +1,5 @@
 {
-  "name": "pattern-arcade",
+  "name": "pattern-lab",
   "version": "1.0.0",
   "private": true,
   "description": "Abstract reasoning trainer: generator, validator and explainer for matrix, series, odd-one-out, Set A/B and diagrammatic puzzles.",

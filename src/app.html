@@ -3,17 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Abstract Reasoning Arcade</title>
+<title>Pattern Lab: abstract reasoning practice</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&display=swap" rel="stylesheet">
 <style>
-/* Retro-arcade shell (single dark theme by choice) around monochrome test canvases. Layout: one column, max 760px. */
+/* Greenwell's design language (owner, 2026-11-26; was a retro-arcade shell): the Maquette's porcelain studio, matte white
+   card on warm grey, one cobalt accent with a warm ochre and a sage, Cormorant for titles, the system sans for the rest.
+   The puzzle canvases stay black on white, like the real tests. Layout: one column, max 760px.
+   The category colours keep their old names (--I … --J) so the engine and lessons are untouched. */
 :root {
-  --bg: #0A0D1F; --bg2: #141A3D; --bg3: #1E2654; --ink: #F3F5FF; --muted: #9BA3D6; --line: #2C356E;
-  --I: #00D1FF; --O: #FFC400; --T: #B44CFF; --S: #22D36B; --Z: #FF3D6E; --L: #FF8A00; --J: #3D7BFF;
-  --display: 'Silkscreen', 'Courier New', monospace; --body: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
-  color-scheme: dark;
+  --bg: #f4f2ed; --bg2: #f8f7f3; --bg3: #ebe8e1; --ink: #1d2230; --muted: #5a6070; --line: rgba(29, 34, 48, 0.12);
+  --I: #2b4bd8; --O: #c7832f; --T: #6b7290; --S: #6f8f5c; --Z: #b5563f; --L: #c9a26b; --J: #1f37a8;
+  --display: -apple-system, BlinkMacSystemFont, 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+  --body: -apple-system, BlinkMacSystemFont, 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+  --serif: 'Cormorant Garamond', Georgia, serif;
+  --card: #f8f7f3; --shadow: 0 1px 0 #fff inset, 0 10px 30px rgba(40, 36, 28, 0.12);
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5; }
@@ -192,6 +198,67 @@ table.pace th, table.pace td { text-align: left; padding: 6px 8px; border-bottom
 table.pace th { font-family: var(--display); font-size: 11px; font-weight: 400; color: var(--muted); }
 .tblwrap { overflow-x: auto; }
 .foot { margin-top: 24px; font-size: 13px; color: var(--muted); }
+
+/* ---- Greenwell porcelain (owner, 2026-11-26): overrides the arcade's black borders, bevels and pixel type ---- */
+html { background: linear-gradient(#eeebe6, #d9d5ce) fixed; }
+body { background: none; }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 2px solid var(--I); }
+header.top { background: none; border: 0; }
+#rain { display: none; }
+.brand { padding: 22px 16px 10px; }
+.logo { font: 500 clamp(34px, 7vw, 44px)/1 var(--serif); letter-spacing: 0.01em; text-shadow: none; color: var(--ink); margin: 0; }
+.logo small { font: 400 13.5px/1.4 var(--body); color: var(--muted); margin-top: 8px; max-width: 46ch; }
+nav.tabs a { font: 600 13.5px var(--body); color: var(--ink); background: rgba(250, 249, 246, 0.92); border: 1px solid rgba(255, 255, 255, 0.9); border-radius: 999px; padding: 9px 15px; box-shadow: 0 2px 8px rgba(40, 36, 28, 0.1); }
+nav.tabs a[aria-current="page"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.blk { border: 0; box-shadow: none; border-radius: 10px; }
+.btn { font: 600 14px var(--body); border: 1px solid transparent; border-radius: 999px; padding: 10px 18px; background: var(--I); color: #fff; box-shadow: 0 4px 14px rgba(43, 75, 216, 0.28); }
+.btn:active { transform: translateY(1px); box-shadow: 0 2px 8px rgba(43, 75, 216, 0.28); }
+.btn.go { background: var(--I); color: #fff; }
+.btn.warn { background: var(--O); color: #fff; box-shadow: 0 4px 14px rgba(199, 131, 47, 0.28); }
+.btn.ghost { background: rgba(250, 249, 246, 0.95); color: var(--ink); border-color: rgba(255, 255, 255, 0.9); box-shadow: 0 2px 8px rgba(40, 36, 28, 0.1); }
+.deck, .stage, .page .lcard, .explain { background: var(--card); border: 0; border-radius: 18px; box-shadow: var(--shadow); }
+.deck h2, .hud small, .explain li .k { font: 700 11px var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--I); }
+.chip { background: rgba(250, 249, 246, 0.95); border: 1px solid var(--line); border-radius: 999px; box-shadow: 0 1px 3px rgba(40, 36, 28, 0.08); font-weight: 600; }
+.chip i { border: 0; border-radius: 50%; width: 10px; height: 10px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.lvlnum { font: 600 24px/1 var(--body); font-variant-numeric: tabular-nums; }
+.meter b { border: 0; border-radius: 4px; background: #e2ded6; height: 18px; }
+.meter b.on { box-shadow: none; }
+.switch { border: 0; border-radius: 999px; background: #d9d5ce; }
+.switch::after { border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2); top: 5px; left: 5px; }
+.learn[aria-pressed="true"] .switch { background: var(--I); }
+.learn[aria-pressed="true"] .switch::after { left: 33px; }
+.learn .lbl { font: 600 14px var(--body); }
+.hud div { background: var(--card); border: 0; border-radius: 12px; box-shadow: var(--shadow); }
+.hud strong { font: 600 20px/1.2 var(--body); font-variant-numeric: tabular-nums; }
+.hud .k strong, .hud div:nth-child(2) strong { font: 500 24px/1.1 var(--serif); }
+.hud .x strong { color: var(--O); } .hud .s strong { color: var(--Z); } .hud .r strong { color: var(--I); }
+.stagebar { background: none; border-bottom: 1px solid var(--line); border-radius: 18px 18px 0 0; }
+.badge { font: 700 11px var(--body); letter-spacing: 0.06em; border: 0; border-radius: 6px; color: #fff; }
+.canvas { border: 1.5px solid var(--ink); border-radius: 10px; }
+.qmark { font: 500 44px var(--serif); }
+.opt { border: 2px solid var(--ink); border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(40, 36, 28, 0.12); }
+.opt .ol { font: 700 12px var(--body); letter-spacing: 0.06em; background: var(--ink); }
+.opt.right { outline: 3px solid var(--S); } .opt.right .ol { background: var(--S); color: #fff; }
+.opt.wrong { outline: 3px solid var(--Z); } .opt.wrong .ol { background: var(--Z); color: #fff; }
+.notes li { background: #fff; border: 1px solid var(--line); border-radius: 10px; }
+.notes .nl { font: 700 12px var(--body); border: 0; border-radius: 5px; color: #fff; background: var(--muted); }
+.notes li.ok { border-color: var(--S); }
+.set { border: 1.5px solid var(--ink); border-radius: 10px; }
+.set h4 { font: 600 14px var(--body); }
+.abn .opt { font: 600 16px var(--body); }
+.qbox { font: 500 24px var(--serif); border-radius: 8px; }
+.feedback { border: 0; border-radius: 14px; }
+.feedback.good { background: rgba(111, 143, 92, 0.16); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(111, 143, 92, 0.5); }
+.feedback.bad { background: rgba(181, 86, 63, 0.12); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(181, 86, 63, 0.45); }
+.feedback strong { font: 500 24px/1.1 var(--serif); }
+.explain h3 { font: 500 24px/1.1 var(--serif); color: var(--ink); }
+.explain li { background: #fff; border-radius: 0 10px 10px 0; }
+.page h2 { font: 500 30px/1.1 var(--serif); }
+.lcard .n { font: 700 11px var(--body); border: 0; border-radius: 5px; color: #fff; }
+table.pace th { font: 700 11px var(--body); letter-spacing: 0.08em; text-transform: uppercase; }
+a { color: var(--I); }
+@media (prefers-reduced-motion: reduce) { .btn, .opt, .switch::after { transition: none; } }
 </style>
 </head>
 <body>
@@ -199,9 +266,8 @@ table.pace th { font-family: var(--display); font-size: 11px; font-weight: 400; 
 <pattern id="hatch" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="5" height="5" fill="#fff"/><line x1="1" y1="0" x2="1" y2="5" stroke="#000" stroke-width="2"/></pattern>
 </defs></svg>
 <header class="top">
-  <canvas id="rain" aria-hidden="true"></canvas>
   <div class="brand">
-    <div class="logo"><span>PATTERN</span> <span>ARCADE</span> <span>//</span><small>Abstract reasoning trainer: SHL, Korn Ferry, Saville, Aon and Criteria formats</small></div>
+    <h1 class="logo">Pattern Lab<small>Practice for the abstract reasoning tests employers set: SHL, Korn Ferry, Saville, Aon and Criteria formats</small></h1>
     <nav class="tabs" aria-label="Sections">
       <a href="#play" data-v="play">Play</a><a href="#lessons" data-v="lessons">Lessons</a><a href="#about" data-v="about">About</a>
     </nav>
@@ -527,7 +593,7 @@ function renderAbout() {
    <tr><td>Criteria / Revelian RCAT</td><td>Figures that break the pattern</td><td>51 mixed items, 20 min</td></tr></tbody></table></div>
    <p class="lead" style="margin-top:8px">Formats change. Your invitation email names the exact test.</p></div>
   <div class="card"><h3>Research basis</h3><p style="margin:0">Design decisions, sources and the question of whether a puzzle can have two answers: <a href="https://claude.ai/artifact/MQS7iskYwuW7oCy51JsRwB" target="_blank" rel="noopener">Abstract Reasoning Trainer — Research Basis</a>.</p></div>
-  <p class="foot">Pattern Arcade · practice puzzles are generated on your device and nothing is sent anywhere.</p></div>`;
+  <p class="foot">Pattern Lab · practice puzzles are generated on your device and nothing is sent anywhere.</p></div>`;
 }
 
 /* ---------- router ---------- */
@@ -544,18 +610,6 @@ function route() {
 window.addEventListener('hashchange', route);
 route();
 
-/* ---------- header block rain ---------- */
-(function () {
-  const cv = document.getElementById('rain'); const ctx = cv.getContext('2d');
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const cols = ['#00D1FF', '#FFC400', '#B44CFF', '#22D36B', '#FF3D6E', '#FF8A00', '#3D7BFF'];
-  const PIECES = [[[0, 0], [1, 0], [2, 0], [3, 0]], [[0, 0], [1, 0], [0, 1], [1, 1]], [[0, 0], [1, 0], [2, 0], [1, 1]], [[1, 0], [2, 0], [0, 1], [1, 1]], [[0, 0], [1, 0], [1, 1], [2, 1]], [[0, 0], [0, 1], [1, 1], [2, 1]], [[2, 0], [0, 1], [1, 1], [2, 1]]];
-  let W, H, drops = []; const S = 12;
-  function size() { W = cv.width = cv.offsetWidth; H = cv.height = cv.offsetHeight; drops = []; for (let i = 0; i < Math.max(6, W / 60); i++) drops.push(mk(Math.random() * H)); }
-  function mk(y) { const k = Math.floor(Math.random() * 7); return { x: Math.floor(Math.random() * (W / S)) * S, y: y == null ? -40 : y, v: .25 + Math.random() * .5, p: PIECES[k], c: cols[k] }; }
-  function draw() { ctx.clearRect(0, 0, W, H); drops.forEach(d => { d.p.forEach(([a, b]) => { ctx.fillStyle = d.c; ctx.fillRect(d.x + a * S, d.y + b * S, S - 1, S - 1); ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.fillRect(d.x + a * S, d.y + b * S + S - 4, S - 1, 3); }); if (!reduce) { d.y += d.v; if (d.y > H + 10) Object.assign(d, mk()); } }); if (!reduce) requestAnimationFrame(draw); }
-  size(); addEventListener('resize', size); draw();
-})();
 })();
 </script>
 </body>

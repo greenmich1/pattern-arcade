@@ -1,4 +1,4 @@
-# Pattern Arcade
+# Pattern Lab
 
 Abstract reasoning trainer with a puzzle generator, uniqueness validator and step-by-step explainer. It covers five formats: 3×3 matrices, next-in-series, odd one out, Set A/B and diagrammatic operators. Difficulty runs from 1 to 10.
 

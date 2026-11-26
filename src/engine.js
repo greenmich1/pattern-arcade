@@ -20,7 +20,8 @@ const SIZE_N = ['small', 'medium', 'large'];
 const FILL_N = ['white', 'striped', 'black'];
 const POS_N = ['top', 'top-right', 'right', 'bottom-right', 'bottom', 'bottom-left', 'left', 'top-left'];
 const SEG_N = ['top edge', 'right edge', 'bottom edge', 'left edge', 'top-left corner', 'top-right corner', 'bottom-right corner', 'bottom-left corner'];
-const COLORS = ['#00D1FF', '#FFC400', '#B44CFF', '#22D36B', '#FF3D6E', '#FF8A00', '#3D7BFF'];
+// Rule colours for Learn mode and the explainer: Greenwell's palette (owner, 2026-11-26), each legible on the white canvas.
+const COLORS = ['#2b4bd8', '#c7832f', '#6b5fa8', '#5f8a4c', '#b5563f', '#a07a3c', '#1f37a8'];
 const ATTR_LABEL = { count: 'Number', size: 'Size', fill: 'Shading', shape: 'Shape', rot: 'Rotation', pos: 'Dot position', lines: 'Lines' };
 
 const mod = (a, m) => ((a % m) + m) % m;

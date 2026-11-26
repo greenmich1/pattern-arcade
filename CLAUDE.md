@@ -1,4 +1,6 @@
-# Pattern Arcade — guide for Claude Code
+# Pattern Lab — guide for Claude Code
+
+(Renamed from Pattern Arcade on 2026-11-26 by the owner, to read less like a game; the repo keeps its old name.)
 
 An abstract reasoning trainer for working professionals aged 18–65. It generates practice puzzles in the formats used by SHL, Korn Ferry/Talent Q, Saville, Aon (cut-e) and Criteria/Revelian, then explains them step by step. It is a learning tool, not a test.
 
@@ -30,7 +32,12 @@ An abstract reasoning trainer for working professionals aged 18–65. It generat
 Set per generator: number of simultaneous rules (`[1,1,2,2,2,3,3,3,4,4]`), the rule pool unlocked by `minL`, option count, extra noise elements (dot, lines) from L6+, and predicate tier (`tierOf`) for odd-one-out and sets. Diagram: sequence length 3→4, operator tier, chained examples from L5.
 
 ## Design language
-- Shell: retro-arcade, single dark theme on purpose. Tetris colours `--I --O --T --S --Z --L --J`, fonts Silkscreen (display, use sparingly) and Atkinson Hyperlegible (body, chosen for legibility across ages).
+- Shell: **Greenwell's design language** (owner, 2026-11-26; it was a retro-arcade dark theme): the Maquette's porcelain
+  studio, matte white card on a warm grey gradient, one cobalt accent (`--I`) with a warm ochre (`--O`), a sage (`--S`),
+  slate (`--T`) and terracotta for a wrong answer (`--Z`). The old variable names are kept so the engine and lessons are
+  untouched; the overrides sit in one block at the end of the stylesheet. Titles in Cormorant Garamond, the rest in the
+  system sans; numbers in the sans (Cormorant's old-style figures read "1" as "I"). Rule colours for Learn mode are
+  `COLORS` in `src/engine.js`, chosen to stay legible on the white canvas.
 - Puzzle canvas: always black on white, like real tests. Colour appears on the puzzle only through Learn mode overlays or after Explain.
 - Respect `prefers-reduced-motion`. Keep tap targets large; mobile-first, max width 760px.
 - Grid and options are seen together, never a scroll apart. Matrix: grid left, options right (`.duo`), stacked under the grid when the stage is ≤600px wide. Answer pictures are the size of a grid cell or series frame (`--cell` on `.stage`, from a container query). Keep the stage's prompt, grid and options within a 720px-tall screen.
